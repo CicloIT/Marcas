@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Juego de Marcas</title>
+<style>
+:root {
+  --gold: #c9a84c;
+  --gold-lt: #e8d48b;
+  --dark: #080808;
+  --dark-mid: #141414;
+  --dark-light: #242424;
+  --cream: #f0e6c8;
+  --ok: #4caf50;
+  --fail: #e53935;
+  --grey: #666;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  background: var(--dark);
+  color: var(--cream);
+  font-family: 'Georgia', 'Times New Roman', serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+.screen {
+  display: none;
+  min-height: 100vh;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+}
+.screen.active { display: flex; }
+
+/* ── START ─────────────────────────────── */
+#s-start {
+  background: radial-gradient(ellipse at 50% 40%, #1c140a 0%, var(--dark) 65%);
+  text-align: center;
+  padding: 40px 24px;
+  gap: 0;
+}
+
+.agda-logo {
+  width: 160px;
+  object-fit: contain;
+  margin-bottom: 36px;
+  opacity: 1;
+  filter: drop-shadow(0 0 12px rgba(160, 80, 255, 0.7)) drop-shadow(0 0 28px rgba(130, 40, 220, 0.45));
+}
+
+.preview-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: 620px;
+  margin-bottom: 48px;
+}
+.preview-row img {
+  width: 68px;
+  height: 68px;
+  object-fit: contain;
+  background: #111;
+  border: 1px solid #2a2a2a;
+  padding: 6px;
+  filter: grayscale(80%) brightness(0.7);
+  transition: filter .4s;
+}
+.preview-row img:hover { filter: grayscale(0%) brightness(1); }
+
+.main-title {
+  font-size: clamp(2.8rem, 9vw, 5.5rem);
+  letter-spacing: .35em;
+  color: var(--gold);
+  text-transform: uppercase;
+  text-shadow: 0 0 40px rgba(201,168,76,.4);
+  line-height: 1;
+  margin-bottom: 8px;
+}
+.main-sub {
+  font-size: .8rem;
+  letter-spacing: .55em;
+  color: var(--grey);
+  text-transform: uppercase;
+  margin-bottom: 56px;
+}
+
+.btn-gold {
+  background: linear-gradient(135deg, #c9a84c 0%, #e8d48b 50%, #c9a84c 100%);
+  color: #0a0a0a;
+  border: none;
+  padding: 18px 64px;
+  font-size: 1rem;
+  letter-spacing: .35em;
+  text-transform: uppercase;
+  cursor: pointer;
+  font-family: 'Georgia', serif;
+  font-weight: bold;
+  clip-path: polygon(12px 0%,100% 0%,calc(100% - 12px) 100%,0% 100%);
+  transition: transform .2s, box-shadow .2s;
+}
+.btn-gold:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 32px rgba(201,168,76,.55);
+}
+
+/* ── GAME ─────────────────────────────── */
+#s-game {
+  align-items: flex-start;
+  padding: 0 16px 40px;
+}
+.game-wrap {
+  width: 100%;
+  max-width: 860px;
+  margin: 0 auto;
+}
+
+.g-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 0 14px;
+  border-bottom: 1px solid #2a2a2a;
+}
+.g-round { color: var(--grey); font-size: .8rem; letter-spacing: .22em; text-transform: uppercase; }
+.g-score { color: var(--gold); font-size: 1.1rem; letter-spacing: .1em; }
+
+.timer-wrap {
+  width: 100%;
+  height: 3px;
+  background: #222;
+  margin: 14px 0 28px;
+  border-radius: 2px;
+  overflow: hidden;
+}
+.timer-bar {
+  height: 100%;
+  width: 100%;
+  background: linear-gradient(90deg, var(--gold), var(--gold-lt));
+  transition: width .12s linear, background .3s;
+  border-radius: 2px;
+}
+
+.mode-tag {
+  display: inline-block;
+  border: 1px solid var(--gold);
+  color: var(--gold);
+  padding: 4px 18px;
+  font-size: .7rem;
+  letter-spacing: .35em;
+  text-transform: uppercase;
+  margin-bottom: 24px;
+}
+
+.q-text {
+  font-size: clamp(1.1rem, 3vw, 1.65rem);
+  text-align: center;
+  line-height: 1.5;
+  margin-bottom: 30px;
+  color: var(--cream);
+}
+.q-text strong { color: var(--gold); font-style: italic; }
+
+/* Center wrapper */
+.q-center { display: flex; flex-direction: column; align-items: center; text-align: center; width: 100%; }
+
+/* Main logo display */
+.logo-main {
+  width: 200px;
+  height: 200px;
+  object-fit: contain;
+  background: #111;
+  border: 2px solid #2a2a2a;
+  padding: 14px;
+  margin-bottom: 30px;
+}
+
+/* Text options */
+.opts-text {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  width: 100%;
+  max-width: 580px;
+}
+
+.opt-btn {
+  background: var(--dark-mid);
+  border: 1px solid #3a3a3a;
+  color: var(--cream);
+  padding: 18px 16px;
+  cursor: pointer;
+  font-family: 'Georgia', serif;
+  font-size: .95rem;
+  transition: border-color .15s, background .15s, color .15s;
+  text-align: center;
+  letter-spacing: .04em;
+}
+.opt-btn:hover:not(:disabled) {
+  border-color: var(--gold);
+  background: #1e1a10;
+  color: var(--gold);
+}
+
+/* Image options */
+.opts-imgs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  width: 100%;
+  max-width: 580px;
+}
+
+.opt-img-btn {
+  background: var(--dark-mid);
+  border: 2px solid #3a3a3a;
+  cursor: pointer;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  transition: border-color .15s, background .15s;
+}
+.opt-img-btn:hover:not(:disabled) { border-color: var(--gold); background: #1a1a0e; }
+.opt-img-btn img {
+  width: 100%;
+  max-width: 150px;
+  height: 110px;
+  object-fit: contain;
+}
+.opt-img-btn span { font-size: .72rem; color: var(--grey); letter-spacing: .15em; text-transform: uppercase; }
+
+/* Answer states */
+.opt-btn.ok, .opt-img-btn.ok {
+  border-color: var(--ok) !important;
+  background: rgba(76,175,80,.18) !important;
+  color: var(--ok);
+}
+.opt-btn.fail, .opt-img-btn.fail {
+  border-color: var(--fail) !important;
+  background: rgba(229,57,53,.15) !important;
+  color: var(--fail);
+}
+.opt-btn.reveal, .opt-img-btn.reveal {
+  border-color: var(--ok) !important;
+  background: rgba(76,175,80,.1) !important;
+  color: var(--ok);
+}
+
+.feedback {
+  margin-top: 22px;
+  font-size: 1rem;
+  letter-spacing: .06em;
+  min-height: 28px;
+  font-style: italic;
+}
+.feedback.ok { color: var(--ok); }
+.feedback.fail { color: var(--fail); }
+.feedback.time { color: #ff9800; }
+
+.btn-next {
+  margin-top: 22px;
+  background: transparent;
+  border: 1px solid var(--gold);
+  color: var(--gold);
+  padding: 12px 44px;
+  font-size: .85rem;
+  letter-spacing: .3em;
+  text-transform: uppercase;
+  cursor: pointer;
+  font-family: 'Georgia', serif;
+  transition: background .2s, color .2s;
+  display: none;
+}
+.btn-next:hover { background: var(--gold); color: #0a0a0a; }
+.btn-next.show { display: inline-block; }
+
+/* ── RESULT ─────────────────────────────── */
+#s-result {
+  background: radial-gradient(ellipse at 50% 40%, #1c140a 0%, var(--dark) 65%);
+  text-align: center;
+  padding: 40px 24px;
+  gap: 12px;
+}
+.res-label { font-size: .75rem; letter-spacing: .55em; color: var(--grey); text-transform: uppercase; margin-bottom: 8px; }
+.res-score { font-size: clamp(3.5rem, 18vw, 9rem); color: var(--gold); text-shadow: 0 0 50px rgba(201,168,76,.45); line-height: 1; margin-bottom: 6px; }
+.res-rating { font-size: 1.4rem; margin-bottom: 6px; }
+.res-msg { color: var(--grey); letter-spacing: .1em; margin-bottom: 48px; font-size: .9rem; }
+
+/* ── RESPONSIVE ─────────────────────────── */
+@media (max-width: 500px) {
+  .opts-text, .opts-imgs { grid-template-columns: 1fr; }
+  .logo-main { width: 160px; height: 160px; }
+  .btn-gold { padding: 16px 40px; font-size: .9rem; }
+}
+</style>
+</head>
+<body>
+
+<!-- START -->
+<div id="s-start" class="screen active">
+  <img src="marcas/AGDALOGO.png" alt="AGDA" class="agda-logo">
+  <div class="preview-row" id="preview"></div>
+  <div class="main-title">MARCAS</div>
+  <div class="main-sub">El Juego de Moda de Lujo</div>
+  <button class="btn-gold" onclick="startGame()">INICIAR JUEGO</button>
+</div>
+
+<!-- GAME -->
+<div id="s-game" class="screen">
+  <div class="game-wrap">
+    <div class="g-header">
+      <div class="g-round">RONDA <span id="rnd">1</span> / <span id="rnd-tot">10</span></div>
+      <div class="g-score">✦ <span id="pts">0</span> pts</div>
+    </div>
+    <div class="timer-wrap"><div class="timer-bar" id="tbar"></div></div>
+    <div id="gcontent"></div>
+  </div>
+</div>
+
+<!-- RESULT -->
+<div id="s-result" class="screen">
+  <div class="res-label">Resultado Final</div>
+  <div class="res-score" id="res-pts">0/10</div>
+  <div class="res-rating" id="res-rating"></div>
+  <div class="res-msg" id="res-msg"></div>
+  <button class="btn-gold" onclick="startGame()">JUGAR DE NUEVO</button>
+</div>
+
+<script>
+const BRANDS = [
+  { name: "Armani",            img: "marcas/armani.jpeg" },
+  { name: "Balenciaga",        img: "marcas/balenciaga.jpeg" },
+  { name: "Calvin Klein",      img: "marcas/calvinklein.jpeg" },
+  { name: "Carolina Herrera",  img: "marcas/carolinaherrera.jpeg" },
+  { name: "Chanel",            img: "marcas/channel.jpeg" },
+  { name: "Dior",              img: "marcas/dior.jpeg" },
+  { name: "Dolce & Gabbana",   img: "marcas/dolcegb.jpeg" },
+  { name: "Givenchy",          img: "marcas/givenchy.jpeg" },
+  { name: "Gucci",             img: "marcas/gucci.jpeg" },
+  { name: "Louis Vuitton",     img: "marcas/louisv.jpeg" },
+  { name: "Alexander McQueen", img: "marcas/mcqueen.jpeg" },
+  { name: "Moschino",          img: "marcas/moschino.jpeg" },
+  { name: "Tommy Hilfiger",    img: "marcas/tommy.jpeg" },
+  { name: "Valentino",         img: "marcas/valentino.jpeg" },
+  { name: "Versace",           img: "marcas/versaceR.png" },
+  { name: "Yves Saint Laurent",img: "marcas/yvestl.jpeg" },
+];
+
+// Groups of brands that look stylistically similar (harder distractors)
+const SIMILAR_GROUPS = [
+  ["Armani","Calvin Klein","Balenciaga","Givenchy"],
+  ["Gucci","Versace","Valentino","Dolce & Gabbana"],
+  ["Chanel","Dior","Yves Saint Laurent","Louis Vuitton"],
+  ["Tommy Hilfiger","Calvin Klein","Carolina Herrera","Alexander McQueen"],
+  ["Versace","Givenchy","Valentino","Moschino"],
+  ["Gucci","Louis Vuitton","Dior","Chanel"],
+];
+
+const TRIVIA = [
+  { q:"¿Qué marca tiene la cabeza de Medusa como símbolo?",        opts:["Gucci","Versace","Valentino","Givenchy"],           a:1 },
+  { q:"¿En qué país fue fundada Gucci?",                            opts:["Francia","España","Italia","Reino Unido"],          a:2 },
+  { q:"¿Qué significan las siglas 'YSL'?",                          opts:["Your Style Label","Yves Saint Laurent","Young Silk Line","Yellow Star Label"], a:1 },
+  { q:"¿Cuál de estas marcas es de origen británico?",              opts:["Valentino","Moschino","Alexander McQueen","Armani"],a:2 },
+  { q:"¿En qué país fue fundada Chanel?",                           opts:["Italia","España","Reino Unido","Francia"],          a:3 },
+  { q:"¿Qué marca tiene el monograma 'LV'?",                        opts:["Lagerfeld Versace","Louis Vuitton","Laura Valentino","Luxury Vogue"], a:1 },
+  { q:"¿Cuál de estas marcas fue fundada primero?",                 opts:["Gucci ","Chanel","Louis Vuitton","Dior"], a:2 },
+  { q:"¿En qué país fue fundada Versace?",                          opts:["Francia","Italia","España","Grecia"],               a:1 },
+  { q:"¿Cuál de estas marcas es de origen americano?",              opts:["Armani","Tommy Hilfiger","Balenciaga","Givenchy"],  a:1 },
+  { q:"¿Quién fundó la marca Versace?",                             opts:["Roberto Versace","Donatella Versace","Gianni Versace","Marco Versace"], a:2 },
+  { q:"¿En qué ciudad fue fundada Gucci?",                          opts:["Roma","Milán","Venecia","Florencia"],               a:3 },
+  { q:"¿Qué marca fue fundada por un diseñador español?",           opts:["Dior","Givenchy","Balenciaga","Moschino"],          a:2 },
+  { q:"¿En qué año fue fundada Chanel?",                            opts:["1895","1910","1925","1945"],                        a:1 },
+  { q:"¿De qué país es originaria Carolina Herrera?",               opts:["Colombia","México","Venezuela","Argentina"],        a:2 },
+  { q:"¿Qué marca usa el doble 'G' entrelazado como logo?",         opts:["Giorgio Armani","Givenchy","Gucci","Gianni Versace"],a:2 },
+  { q:"¿Cuál de estas marcas NO es italiana?",                      opts:["Gucci","Valentino","Givenchy","Versace"],           a:2 },
+  { q:"¿Quién fundó la casa de moda Dior?",                         opts:["Pierre Dior","Christian Dior","Marc Dior","Jean Dior"], a:1 },
+  { q:"¿En qué ciudad fue fundada la casa Dior?",                   opts:["Lyon","Marsella","París","Burdeos"],                a:2 },
+  { q:"¿Qué marca creó el icónico bolso '2.55'?",                   opts:["Louis Vuitton","Gucci","Chanel","Dior"],            a:2 },
+  { q:"¿En qué año fue asesinado Gianni Versace?",                  opts:["1990","1994","1997","2001"],                        a:2 },
+  { q:"¿Qué marca creó el perfume icónico 'N°5'?",                  opts:["Dior","Chanel","Givenchy","Yves Saint Laurent"],    a:1 },
+  { q:"¿Qué marca es famosa por los bolsos 'Neverfull' y 'Speedy'?",opts:["Gucci","Louis Vuitton","Chanel","Dior"],            a:1 },
+  { q:"¿Qué color es icónico de la marca Valentino?",               opts:["Azul marino","Verde esmeralda","Rojo","Negro"],     a:2 },
+  { q:"¿En qué país fue fundada Tommy Hilfiger?",                   opts:["Reino Unido","Canadá","Australia","Estados Unidos"],a:3 },
+  { q:"¿Qué marca italiana es famosa por el estampado 'Flora'?",    opts:["Armani","Versace","Gucci","Valentino"],             a:2 },
+  { q:"¿Cuál de estas marcas pertenece al grupo LVMH?",             opts:["Gucci","Prada","Louis Vuitton","Armani"],           a:2 },
+  { q:"¿Qué marca usa el icono de doble 'C' entrelazada?",          opts:["Calvin Klein","Carolina Herrera","Chanel","Christian Dior"], a:2 },
+  { q:"¿En qué año fue fundado Dior?",                              opts:["1936","1942","1946","1952"],                        a:2 },
+  { q:"¿Qué país de origen tiene Balenciaga como marca de lujo actual?", opts:["España","Francia","Italia","Reino Unido"],    a:1 },
+  { q:"¿Qué marca de lujo es conocida por su famoso 'trench coat'?", opts:["Armani","Dior","Balenciaga","Moschino"],          a:1 },
+  { q:"¿Qué marca fue fundada por la diseñadora conocida como 'Coco' Chanel?", opts:["Dior","Chanel","Givenchy","Prada"],          a:1 },
+  { q:"¿Qué marca fue creada por los diseñadores Domenico Dolce y Stefano Gabbana?", opts:["Versace","Valentino","Armani","Dolce & Gabbana"], a:3 },
+  { q:"¿Qué marca vistió a Audrey Hepburn en varias de sus películas más icónicas?", opts:["Dior","Chanel","Balenciaga","Givenchy"],         a:3 },
+  { q:"¿Qué marca fue fundada por el diseñador español Cristóbal Balenciaga?",       opts:["Loewe","Gucci","Valentino","Balenciaga"],         a:3 },
+  { q:"¿Qué marca es famosa por el característico tono conocido como 'Rojo Valentino'?", opts:["Versace","Moschino","Dior","Valentino"],      a:3 },
+  { q:"¿Qué marca lanzó la colección 'New Look', que revolucionó la moda femenina tras la Segunda Guerra Mundial?", opts:["Chanel","Givenchy","Louis Vuitton","Dior"], a:3 },
+  { q:"¿Qué marca italiana se caracteriza por sus diseños irreverentes, coloridos y con mucho humor?", opts:["Fendi","Gucci","Versace","Moschino"], a:3 },
+  { q:"¿Qué marca es reconocida por su clásico logo con los colores rojo, blanco y azul?", opts:["Calvin Klein","Ralph Lauren","Lacoste","Tommy Hilfiger"], a:3 },
+  { q:"¿Qué marca tiene como emblema la cabeza de Medusa?",                          opts:["Gucci","Balmain","Valentino","Versace"],          a:3 },
+  { q:"¿Qué marca de lujo italiana utiliza el doble 'G' como uno de sus logotipos más reconocidos?", opts:["Prada","Fendi","Dolce & Gabbana","Gucci"], a:3 },
+];
+
+// ── State ───────────────────────────────
+let G = {};
+let timer = null;
+
+// ── Utils ───────────────────────────────
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+
+function brandByName(name) {
+  return BRANDS.find(b => b.name === name);
+}
+
+function show(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// ── Preview logos on start ───────────────
+(function initPreview() {
+  const el = document.getElementById('preview');
+  el.innerHTML = shuffle(BRANDS).slice(0, 8)
+    .map(b => `<img src="${b.img}" alt="${b.name}" title="${b.name}">`)
+    .join('');
+})();
+
+// ── Game flow ────────────────────────────
+function startGame() {
+  G = { round: 0, score: 0, total: 10, usedTrivia: [] };
+  show('s-game');
+  nextRound();
+}
+
+function nextRound() {
+  if (G.round >= G.total) { showResult(); return; }
+  G.round++;
+  document.getElementById('rnd').textContent = G.round;
+  document.getElementById('rnd-tot').textContent = G.total;
+  document.getElementById('pts').textContent = G.score;
+
+  const modes = ['image-to-name','name-to-image','trivia','similar-logos'];
+  render(pick(modes));
+  startTimer(15);
+}
+
+// ── Timer ────────────────────────────────
+function startTimer(secs) {
+  clearInterval(timer);
+  let left = secs;
+  const bar = document.getElementById('tbar');
+  bar.style.width = '100%';
+  bar.style.background = 'linear-gradient(90deg, var(--gold), var(--gold-lt))';
+
+  timer = setInterval(() => {
+    left -= 0.1;
+    const pct = Math.max(0, (left / secs) * 100);
+    bar.style.width = pct + '%';
+    if (pct < 30) bar.style.background = 'linear-gradient(90deg,#e53935,#ff6b6b)';
+    if (left <= 0) { clearInterval(timer); onTimeUp(); }
+  }, 100);
+}
+
+function stopTimer() { clearInterval(timer); }
+
+function onTimeUp() {
+  lockAll();
+  revealCorrect();
+  const fb = document.getElementById('fb');
+  if (fb) { fb.textContent = '⏱ Tiempo agotado!'; fb.className = 'feedback time'; }
+  showNext();
+}
+
+// ── Render modes ─────────────────────────
+function render(mode) {
+  const el = document.getElementById('gcontent');
+
+  if (mode === 'image-to-name') {
+    const correct = pick(BRANDS);
+    const opts = shuffle([correct, ...shuffle(BRANDS.filter(b => b !== correct)).slice(0,3)]);
+    const ci = opts.indexOf(correct);
+    el.innerHTML = `
+      <div class="q-center">
+        <div class="mode-tag">¿Qué Marca Es?</div>
+        <img src="${correct.img}" class="logo-main" alt="Logo">
+        <p class="q-text">¿A qué marca pertenece este logo?</p>
+        <div class="opts-text">
+          ${opts.map((o,i) => `
+            <button class="opt-btn" data-ok="${i===ci}" onclick="answer(this,${i===ci})">
+              ${o.name}
+            </button>`).join('')}
+        </div>
+        <div class="feedback" id="fb"></div>
+        <button class="btn-next" id="nxt" onclick="nextRound()">SIGUIENTE →</button>
+      </div>`;
+  }
+
+  else if (mode === 'name-to-image') {
+    const correct = pick(BRANDS);
+    const opts = shuffle([correct, ...shuffle(BRANDS.filter(b => b !== correct)).slice(0,3)]);
+    const ci = opts.indexOf(correct);
+    el.innerHTML = `
+      <div class="q-center">
+        <div class="mode-tag">¿Cuál Es El Logo?</div>
+        <p class="q-text">¿Cuál de estos logos es de <strong>${correct.name}</strong>?</p>
+        <div class="opts-imgs">
+          ${opts.map((o,i) => `
+            <button class="opt-img-btn" data-ok="${i===ci}" onclick="answer(this,${i===ci})">
+              <img src="${o.img}" alt="Logo">
+            </button>`).join('')}
+        </div>
+        <div class="feedback" id="fb"></div>
+        <button class="btn-next" id="nxt" onclick="nextRound()">SIGUIENTE →</button>
+      </div>`;
+  }
+
+  else if (mode === 'similar-logos') {
+    // Pick a similarity group, then pick one brand from it as target
+    const group = pick(SIMILAR_GROUPS);
+    const targetName = pick(group);
+    const groupBrands = group.map(n => brandByName(n));
+    const opts = shuffle(groupBrands);
+    const correct = brandByName(targetName);
+    const ci = opts.indexOf(correct);
+    el.innerHTML = `
+      <div class="q-center">
+        <div class="mode-tag">Logos Parecidos</div>
+        <p class="q-text">¿Cuál de estos logos pertenece a <strong>${correct.name}</strong>?</p>
+        <div class="opts-imgs">
+          ${opts.map((o,i) => `
+            <button class="opt-img-btn" data-ok="${i===ci}" onclick="answer(this,${i===ci})">
+              <img src="${o.img}" alt="Logo">
+              <span>Opción ${i+1}</span>
+            </button>`).join('')}
+        </div>
+        <div class="feedback" id="fb"></div>
+        <button class="btn-next" id="nxt" onclick="nextRound()">SIGUIENTE →</button>
+      </div>`;
+  }
+
+  else if (mode === 'trivia') {
+    const avail = TRIVIA.map((_,i) => i).filter(i => !G.usedTrivia.includes(i));
+    const pool = avail.length ? avail : TRIVIA.map((_,i) => i);
+    const idx = pick(pool);
+    G.usedTrivia.push(idx);
+    const q = TRIVIA[idx];
+    el.innerHTML = `
+      <div class="q-center">
+        <div class="mode-tag">Trivia</div>
+        <p class="q-text">${q.q}</p>
+        <div class="opts-text">
+          ${q.opts.map((o,i) => `
+            <button class="opt-btn" data-ok="${i===q.a}" onclick="answer(this,${i===q.a})">
+              ${o}
+            </button>`).join('')}
+        </div>
+        <div class="feedback" id="fb"></div>
+        <button class="btn-next" id="nxt" onclick="nextRound()">SIGUIENTE →</button>
+      </div>`;
+  }
+}
+
+// ── Answer handler ────────────────────────
+function answer(btn, isCorrect) {
+  stopTimer();
+  lockAll();
+
+  const fb = document.getElementById('fb');
+  if (isCorrect) {
+    btn.classList.add('ok');
+    G.score++;
+    document.getElementById('pts').textContent = G.score;
+    fb.textContent = '¡Correcto! +1 punto';
+    fb.className = 'feedback ok';
+  } else {
+    btn.classList.add('fail');
+    revealCorrect();
+    fb.textContent = 'Incorrecto';
+    fb.className = 'feedback fail';
+  }
+  showNext();
+}
+
+function lockAll() {
+  document.querySelectorAll('.opt-btn,.opt-img-btn').forEach(b => b.disabled = true);
+}
+function revealCorrect() {
+  document.querySelectorAll('[data-ok="true"]').forEach(b => b.classList.add('reveal'));
+}
+function showNext() {
+  const n = document.getElementById('nxt');
+  if (n) n.classList.add('show');
+}
+
+// ── Result screen ─────────────────────────
+function showResult() {
+  show('s-result');
+  const s = G.score, t = G.total;
+  document.getElementById('res-pts').textContent = `${s}/${t}`;
+  const pct = s / t;
+  let rating, msg;
+  if (pct === 1)    { rating = '👑 EXPERTO EN MODA';   msg = '¡Perfecto! Conoces todos los logos de lujo.'; }
+  else if (pct >= .8){ rating = '⭐⭐⭐ FASHIONISTA';     msg = 'Excelente conocimiento de marcas de lujo.'; }
+  else if (pct >= .6){ rating = '⭐⭐ BUEN OJO';         msg = 'Buen trabajo. ¡Sigue practicando!'; }
+  else if (pct >= .4){ rating = '⭐ APRENDIZ';           msg = 'Vas por buen camino. ¡Inténtalo de nuevo!'; }
+  else               { rating = '📚 NOVATO';             msg = '¡No te rindas! La moda es un arte que se aprende.'; }
+  document.getElementById('res-rating').textContent = rating;
+  document.getElementById('res-msg').textContent = msg;
+}
+</script>
+</body>
+</html>
